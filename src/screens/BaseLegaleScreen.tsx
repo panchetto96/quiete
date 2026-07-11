@@ -31,6 +31,11 @@ const ITEMS: LegalItem[] = [
     text: 'Documentare il volume di una musica è lecito; captare le parole di una conversazione privata è un reato a sé. Quiete ti guida a registrare tracce brevi del disturbo, non conversazioni.',
   },
   {
+    art: 'Art. 659 c.p.',
+    title: 'Il rumore che disturba, non solo te',
+    text: 'Punisce chi disturba le occupazioni o il riposo delle persone con schiamazzi o rumori. La giurisprudenza richiede che il disturbo sia idoneo a incidere su una pluralità di persone, non solo su chi si lamenta: per questo contano ripetizione, orari e continuità nel tempo, non l\'episodio isolato.',
+  },
+  {
     art: 'D.lgs. 28/2010',
     title: 'La mediazione è il primo passaggio obbligato',
     text: 'Per le liti condominiali la mediazione civile è condizione di procedibilità. Arrivarci con un fascicolo ordinato cambia il peso della tua posizione al tavolo.',
