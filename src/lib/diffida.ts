@@ -17,17 +17,29 @@ function formatDateTime(iso: string): string {
  * prima dell'invio. Non è consulenza legale, è un punto di partenza.
  */
 export function buildDiffidaText(episodes: Episode[], settings: AppSettings): string {
-  const stats = computeStats(episodes, settings);
+  const stats = computeStats(episodes, settings, settings);
   const oldest = episodes.reduce((min, e) => (e.startedAt < min.startedAt ? e : min), episodes[0]);
   const newest = episodes.reduce((max, e) => (e.startedAt > max.startedAt ? e : max), episodes[0]);
 
+  // La fonte si cita solo se corrisponde davvero agli orari attuali (vedi SettingsScreen):
+  // se l'utente ha cambiato gli orari senza indicare una propria ordinanza, non si
+  // attribuisce un regolamento che quegli orari non prevede più.
+  const fonteSuffix = settings.comuneFonte ? ` (${settings.comuneFonte})` : '';
+
   const nightNote =
     stats.nightPercentage >= 50
-      ? `La maggior parte degli episodi (${stats.nightPercentage}%) si colloca nella fascia di riposo notturno` +
-        (settings.comune ? ` prevista dal regolamento comunale di ${settings.comune}` : '') +
-        ` (dalle ${String(settings.nightStartHour).padStart(2, '0')}:00 alle ${String(
-          settings.nightEndHour
-        ).padStart(2, '0')}:00).`
+      ? `La maggior parte degli episodi (${stats.nightPercentage}%) si colloca nella fascia di riposo notturno${fonteSuffix} (dalle ${String(
+          settings.nightStartHour
+        ).padStart(2, '0')}:00 alle ${String(settings.nightEndHour).padStart(2, '0')}:00).`
+      : '';
+
+  const dayRestNote =
+    stats.dayRestEnabled && stats.dayRestPercentage >= 30
+      ? `Una parte rilevante degli episodi (${stats.dayRestPercentage}%) ricade inoltre nella fascia di riposo pomeridiano${fonteSuffix} (dalle ${String(
+          settings.dayStartHour
+        ).padStart(2, '0')}:${String(settings.dayStartMinute).padStart(2, '0')} alle ${String(
+          settings.dayEndHour
+        ).padStart(2, '0')}:${String(settings.dayEndMinute).padStart(2, '0')}).`
       : '';
 
   const typeSummary = stats.byType.map((t) => `${t.label.toLowerCase()} (${t.count})`).join(', ');
@@ -54,7 +66,9 @@ A partire dal ${formatDate(oldest?.startedAt ?? new Date().toISOString())} e fin
     newest?.startedAt ?? new Date().toISOString()
   )}, si sono verificati ripetuti episodi di rumori molesti provenienti dall'unità immobiliare di Vostra proprietà/conduzione, per un totale di ${
     stats.total
-  } episodi documentati (${typeSummary}).${nightNote ? `\n\n${nightNote}` : ''}
+  } episodi documentati (${typeSummary}).${nightNote ? `\n\n${nightNote}` : ''}${
+    dayRestNote ? `\n\n${dayRestNote}` : ''
+  }
 
 Di seguito un estratto degli episodi più recenti:
 ${recentEpisodes}

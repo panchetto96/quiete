@@ -12,7 +12,7 @@ function formatDateTime(iso: string): string {
 
 export function buildFascicoloHtml(episodes: Episode[], settings?: AppSettings): string {
   const sorted = [...episodes].sort((a, b) => a.startedAt.localeCompare(b.startedAt));
-  const stats = computeStats(episodes, settings);
+  const stats = computeStats(episodes, settings, settings);
 
   const rows = sorted
     .map(
@@ -31,11 +31,27 @@ export function buildFascicoloHtml(episodes: Episode[], settings?: AppSettings):
   const nightHoursLabel = `${String(stats.nightStartHour).padStart(2, '0')}:00-${String(
     stats.nightEndHour
   ).padStart(2, '0')}:00`;
-  const comuneLine = settings?.comune
-    ? `Fascia di riposo notturno di riferimento: ${nightHoursLabel}, come da regolamento del Comune di ${escapeHtml(
+  // La fonte viene citata solo se coincide davvero con gli orari attuali (vedi
+  // SettingsScreen): se l'utente ha modificato gli orari senza indicare una propria
+  // ordinanza, non va attribuita una fonte che quegli orari non prevede più.
+  const comuneLine = settings?.comuneFonte
+    ? `Fascia di riposo notturno di riferimento: ${nightHoursLabel}${
+        settings.comune ? ` (Comune di ${escapeHtml(settings.comune)})` : ''
+      } — fonte: ${escapeHtml(settings.comuneFonte)}.`
+    : settings?.comune
+    ? `Fascia di riposo notturno di riferimento: ${nightHoursLabel} (Comune di ${escapeHtml(
         settings.comune
-      )}.`
+      )}; valore personalizzato, nessuna fonte indicata).`
     : `Fascia di riposo notturno di riferimento: ${nightHoursLabel} (valore generico; personalizzabile nelle impostazioni in base al proprio comune).`;
+
+  const dayRestLine = stats.dayRestEnabled
+    ? `Fascia di riposo pomeridiano di riferimento: ${String(stats.dayStartHour).padStart(2, '0')}:${String(
+        stats.dayStartMinute
+      ).padStart(2, '0')}-${String(stats.dayEndHour).padStart(2, '0')}:${String(stats.dayEndMinute).padStart(
+        2,
+        '0'
+      )} (${stats.dayRestPercentage}% degli episodi).`
+    : '';
 
   return `
   <html>
@@ -60,7 +76,7 @@ export function buildFascicoloHtml(episodes: Episode[], settings?: AppSettings):
       <div class="summary">
         <strong>Riepilogo</strong><br/>
         ${stats.total} episodi documentati, ${stats.nightPercentage}% nella fascia notturna (${nightHoursLabel}).<br/>
-        ${comuneLine}
+        ${comuneLine}${dayRestLine ? `<br/>${dayRestLine}` : ''}
       </div>
 
       <table>

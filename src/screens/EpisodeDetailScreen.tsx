@@ -6,13 +6,16 @@ import { useTheme, Theme } from '../theme/colors';
 import { getEpisode, deleteEpisode } from '../db/database';
 import { Episode, episodeTypeInfo } from '../types/episode';
 import { formatDuration } from '../lib/format';
+import { useSettings } from '../context/SettingsContext';
+import { scaleFontSizes } from '../lib/fontScale';
 import type { RootStackParamList } from '../types/navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DettaglioEpisodio'>;
 
 export default function EpisodeDetailScreen({ route, navigation }: Props) {
   const theme = useTheme();
-  const styles = makeStyles(theme);
+  const { fontScale } = useSettings();
+  const styles = makeStyles(theme, fontScale);
   const { id } = route.params;
   const [episode, setEpisode] = useState<Episode | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -107,8 +110,9 @@ export default function EpisodeDetailScreen({ route, navigation }: Props) {
   );
 }
 
-function makeStyles(theme: Theme) {
-  return StyleSheet.create({
+function makeStyles(theme: Theme, scale: number) {
+  return scaleFontSizes(
+    StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.bg, padding: 24, paddingTop: 64 },
     notFound: { color: theme.muted, fontSize: 15 },
     headerRow: { flexDirection: 'row', alignItems: 'flex-start' },
@@ -151,5 +155,7 @@ function makeStyles(theme: Theme) {
     spacer: { flex: 1 },
     deleteBtn: { padding: 16, alignItems: 'center' },
     deleteBtnText: { color: theme.danger, fontSize: 14, fontWeight: '600' },
-  });
+    }),
+    scale
+  );
 }

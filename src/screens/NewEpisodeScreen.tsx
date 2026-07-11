@@ -5,7 +5,7 @@ import { View, Text, Pressable, TextInput, StyleSheet, ScrollView, Alert } from 
 // nella forma più semplice per questo caso d'uso (copiare un file audio in una cartella fissa).
 import * as FileSystem from 'expo-file-system/legacy';
 import { useAudioRecorder, useAudioRecorderState, RecordingPresets, AudioModule } from 'expo-audio';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme, Theme } from '../theme/colors';
 import { EPISODE_TYPES, EpisodeType } from '../types/episode';
@@ -13,6 +13,8 @@ import { insertEpisode, updateEpisode, getEpisode } from '../db/database';
 import type { RootStackParamList } from '../types/navigation';
 import { SoundLevelMeter } from '../components/SoundLevelMeter';
 import { AUDIO_DIR } from '../lib/paths';
+import { useSettings } from '../context/SettingsContext';
+import { scaleFontSizes } from '../lib/fontScale';
 
 const RECORDING_OPTIONS = { ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true };
 
@@ -24,7 +26,8 @@ function newId(): string {
 
 export default function NewEpisodeScreen({ navigation, route }: Props) {
   const theme = useTheme();
-  const styles = makeStyles(theme);
+  const { fontScale } = useSettings();
+  const styles = makeStyles(theme, fontScale);
   const editingId = route.params?.id;
   const isEditing = Boolean(editingId);
 
@@ -87,26 +90,22 @@ export default function NewEpisodeScreen({ navigation, route }: Props) {
     }
   }
 
-  function onChangeDate(event: DateTimePickerEvent, selected?: Date) {
+  function onValueChangeDate(event: DateTimePickerChangeEvent, selected: Date) {
     setShowDatePicker(false);
-    if (event.type === 'set' && selected) {
-      setStartedAt((prev) => {
-        const next = new Date(prev);
-        next.setFullYear(selected.getFullYear(), selected.getMonth(), selected.getDate());
-        return next;
-      });
-    }
+    setStartedAt((prev) => {
+      const next = new Date(prev);
+      next.setFullYear(selected.getFullYear(), selected.getMonth(), selected.getDate());
+      return next;
+    });
   }
 
-  function onChangeTime(event: DateTimePickerEvent, selected?: Date) {
+  function onValueChangeTime(event: DateTimePickerChangeEvent, selected: Date) {
     setShowTimePicker(false);
-    if (event.type === 'set' && selected) {
-      setStartedAt((prev) => {
-        const next = new Date(prev);
-        next.setHours(selected.getHours(), selected.getMinutes(), 0, 0);
-        return next;
-      });
-    }
+    setStartedAt((prev) => {
+      const next = new Date(prev);
+      next.setHours(selected.getHours(), selected.getMinutes(), 0, 0);
+      return next;
+    });
   }
 
   async function handleSave() {
@@ -164,10 +163,23 @@ export default function NewEpisodeScreen({ navigation, route }: Props) {
         </Pressable>
       </View>
       {showDatePicker && (
-        <DateTimePicker value={startedAt} mode="date" display="default" maximumDate={new Date()} onChange={onChangeDate} />
+        <DateTimePicker
+          value={startedAt}
+          mode="date"
+          display="default"
+          maximumDate={new Date()}
+          onValueChange={onValueChangeDate}
+          onDismiss={() => setShowDatePicker(false)}
+        />
       )}
       {showTimePicker && (
-        <DateTimePicker value={startedAt} mode="time" display="default" onChange={onChangeTime} />
+        <DateTimePicker
+          value={startedAt}
+          mode="time"
+          display="default"
+          onValueChange={onValueChangeTime}
+          onDismiss={() => setShowTimePicker(false)}
+        />
       )}
 
       <Text style={styles.label}>Che rumore è?</Text>
@@ -236,8 +248,9 @@ export default function NewEpisodeScreen({ navigation, route }: Props) {
   );
 }
 
-function makeStyles(theme: Theme) {
-  return StyleSheet.create({
+function makeStyles(theme: Theme, scale: number) {
+  return scaleFontSizes(
+    StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.bg },
     content: { padding: 20, paddingTop: 60, paddingBottom: 60 },
     screenTitle: { fontSize: 22, fontWeight: '700', color: theme.text, marginBottom: 8 },
@@ -314,5 +327,7 @@ function makeStyles(theme: Theme) {
     saveBtnText: { color: theme.accentInk, fontSize: 16, fontWeight: '700' },
     cancelBtn: { padding: 14, alignItems: 'center', marginTop: 4 },
     cancelBtnText: { color: theme.muted, fontSize: 14 },
-  });
+    }),
+    scale
+  );
 }

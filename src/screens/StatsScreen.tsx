@@ -5,19 +5,22 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme, Theme } from '../theme/colors';
 import { getAllEpisodes, getSettings } from '../db/database';
 import { computeStats, DiaryStats } from '../lib/stats';
+import { useSettings } from '../context/SettingsContext';
+import { scaleFontSizes } from '../lib/fontScale';
 import type { RootStackParamList } from '../types/navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Statistiche'>;
 
 export default function StatsScreen({ navigation }: Props) {
   const theme = useTheme();
-  const styles = makeStyles(theme);
+  const { fontScale } = useSettings();
+  const styles = makeStyles(theme, fontScale);
   const [stats, setStats] = useState<DiaryStats | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       Promise.all([getAllEpisodes(), getSettings()]).then(([episodes, settings]) =>
-        setStats(computeStats(episodes, settings))
+        setStats(computeStats(episodes, settings, settings))
       );
     }, [])
   );
@@ -61,6 +64,17 @@ export default function StatsScreen({ navigation }: Props) {
             {String(stats.nightEndHour).padStart(2, '0')}
           </Text>
         </View>
+        {stats.dayRestEnabled && (
+          <View style={styles.summaryCard}>
+            <Text style={[styles.summaryNum, stats.dayRestPercentage >= 50 && { color: theme.accent }]}>
+              {stats.dayRestPercentage}%
+            </Text>
+            <Text style={styles.summaryLabel}>
+              tra le {String(stats.dayStartHour).padStart(2, '0')}:{String(stats.dayStartMinute).padStart(2, '0')}
+              {'\n'}e le {String(stats.dayEndHour).padStart(2, '0')}:{String(stats.dayEndMinute).padStart(2, '0')}
+            </Text>
+          </View>
+        )}
       </View>
 
       {stats.nightPercentage >= 50 && (
@@ -68,6 +82,14 @@ export default function StatsScreen({ navigation }: Props) {
           <Text style={styles.calloutText}>
             La maggior parte degli episodi cade nella fascia di riposo notturno — un elemento che pesa nella
             valutazione della tollerabilità (art. 844 c.c.).
+          </Text>
+        </View>
+      )}
+
+      {stats.dayRestEnabled && stats.dayRestPercentage >= 50 && (
+        <View style={styles.callout}>
+          <Text style={styles.calloutText}>
+            La maggior parte degli episodi cade anche nella fascia di riposo pomeridiano prevista dal tuo comune.
           </Text>
         </View>
       )}
@@ -81,7 +103,14 @@ export default function StatsScreen({ navigation }: Props) {
                 styles.hourBar,
                 {
                   height: 4 + (h.count / maxHour) * 70,
-                  backgroundColor: h.count === 0 ? theme.line : h.isNight ? theme.accent : theme.muted,
+                  backgroundColor:
+                    h.count === 0
+                      ? theme.line
+                      : h.isNight
+                      ? theme.accent
+                      : h.isDayRest
+                      ? `${theme.accent}80`
+                      : theme.muted,
                 },
               ]}
             />
@@ -132,8 +161,9 @@ export default function StatsScreen({ navigation }: Props) {
   );
 }
 
-function makeStyles(theme: Theme) {
-  return StyleSheet.create({
+function makeStyles(theme: Theme, scale: number) {
+  return scaleFontSizes(
+    StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.bg },
     content: { padding: 20, paddingTop: 64, paddingBottom: 60 },
     title: { fontSize: 28, fontWeight: '700', color: theme.text, marginBottom: 20 },
@@ -194,5 +224,7 @@ function makeStyles(theme: Theme) {
     },
     typeBar: { height: '100%', backgroundColor: theme.accent, borderRadius: 4 },
     typeCount: { color: theme.muted, fontSize: 12, width: 20, textAlign: 'right' },
-  });
+    }),
+    scale
+  );
 }

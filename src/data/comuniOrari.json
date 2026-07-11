@@ -17,7 +17,64 @@
     "comune": "Cagliari",
     "nightStartHour": 23,
     "nightEndHour": 7,
+    "dayStartHour": 13,
+    "dayStartMinute": 0,
+    "dayEndHour": 15,
+    "dayEndMinute": 30,
     "note": "Periodo notturno 23-7 nelle zone residenziali; il regolamento prevede anche un riposo pomeridiano dalle 13 alle 15:30.",
     "fonte": "Regolamento Acustico Comunale, Comune di Cagliari (delibera C.C. n. 37/2016)"
+  },
+  {
+    "comune": "Firenze",
+    "nightStartHour": 0,
+    "nightEndHour": 7,
+    "note": "È tutelata in modo particolare la fascia notturna dalle 24 alle 7 (dalle 24 alle 9 nei giorni festivi), a tutela della quiete e del riposo dei cittadini.",
+    "fonte": "Regolamento di Polizia Urbana di Firenze \"Norme per la civile convivenza in città\", art. 23 (Del. C.C. n. 69/2008, agg. Del. C.C. n. 9/2025)"
+  },
+  {
+    "comune": "Parma",
+    "nightStartHour": 22,
+    "nightEndHour": 7,
+    "note": "È tutelata in modo particolare la fascia dalle 22 alle 7 (alle 9 nei giorni festivi): vietato disturbare la pubblica quiete e la tranquillità delle persone.",
+    "fonte": "Regolamento di Polizia Urbana di Parma, art. 27 \"Pubblica quiete e tranquillità delle persone\""
+  },
+  {
+    "comune": "Venezia",
+    "nightStartHour": 0,
+    "nightEndHour": 7,
+    "dayStartHour": 13,
+    "dayStartMinute": 0,
+    "dayEndHour": 15,
+    "dayEndMinute": 30,
+    "note": "Vietato turbare la quiete e il riposo delle persone dalle 24 alle 7; previsto anche un riposo pomeridiano dalle 13 alle 15:30 (maggio-settembre) o dalle 13 alle 15 (ottobre-aprile).",
+    "fonte": "Regolamento di Polizia Urbana di Venezia, art. 49-bis (Delibera C.C. n. 63 del 29/11/2016)"
+  },
+  {
+    "comune": "Bologna",
+    "nightStartHour": 22,
+    "nightEndHour": 9,
+    "note": "Vietato l'uso di strumenti musicali o diffusione sonora prima delle 9 e dopo le 22, sia nei luoghi pubblici sia nelle abitazioni.",
+    "fonte": "Regolamento di Polizia Urbana di Bologna, art. 12 \"Divieto di suoni e schiamazzi\" (Allegato B, testo consolidato 2020)"
+  },
+  {
+    "comune": "Perugia",
+    "nightStartHour": 0,
+    "nightEndHour": 8,
+    "note": "Vietato l'uso di strumenti musicali o diffusione sonora in edifici con civili abitazioni dalle 24 alle 8.",
+    "fonte": "Regolamento di Polizia Urbana di Perugia, art. 23 \"Tutela della quiete\" (Del. C.C. n. 20 del 03/02/2025)"
+  },
+  {
+    "comune": "Modena",
+    "nightStartHour": 0,
+    "nightEndHour": 7,
+    "note": "Vietato l'uso di strumenti musicali, apparecchi radiotelevisivi e simili dalle 24 alle 7, salvo autorizzazione in deroga.",
+    "fonte": "Regolamento Comunale di Polizia Urbana di Modena, art. 27 \"Utilizzo di strumenti musicali\" (Del. C.C. n. 32 del 10/06/2021)"
+  },
+  {
+    "comune": "Reggio Emilia",
+    "nightStartHour": 0,
+    "nightEndHour": 9,
+    "note": "Qualsiasi diffusione sonora nelle aree pubbliche o ad uso pubblico è vietata dalle 24 alle 9, a tutela della quiete pubblica e del riposo delle persone.",
+    "fonte": "Regolamento di Polizia Urbana e per la civile convivenza di Reggio Emilia, art. 21 (Delibera C.C. n. 79 del 16/07/2018)"
   }
 ]

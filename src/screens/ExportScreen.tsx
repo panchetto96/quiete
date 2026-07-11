@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme, Theme } from '../theme/colors';
-import { getAllEpisodes, getSettings } from '../db/database';
+import { getAllEpisodes, getSettings, updateSettings } from '../db/database';
 import { Episode } from '../types/episode';
 import { exportFascicolo } from '../lib/pdf';
 import { exportCsv } from '../lib/csv';
 import { shareDiffida } from '../lib/diffida';
 import { exportBackup, importBackup } from '../lib/backup';
+import { useSettings } from '../context/SettingsContext';
+import { scaleFontSizes } from '../lib/fontScale';
 import type { RootStackParamList } from '../types/navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Esporta'>;
@@ -16,7 +18,8 @@ type ActionKey = 'pdf' | 'csv' | 'diffida' | 'backupExport' | 'backupImport';
 
 export default function ExportScreen({ navigation }: Props) {
   const theme = useTheme();
-  const styles = makeStyles(theme);
+  const { fontScale, reloadSettings } = useSettings();
+  const styles = makeStyles(theme, fontScale);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState<ActionKey | null>(null);
@@ -61,7 +64,11 @@ export default function ExportScreen({ navigation }: Props) {
   }
 
   function handleBackupExport() {
-    run('backupExport', () => exportBackup());
+    run('backupExport', async () => {
+      await exportBackup();
+      await updateSettings({ lastBackupAt: new Date().toISOString() });
+      await reloadSettings();
+    });
   }
 
   function handleBackupImport() {
@@ -79,6 +86,7 @@ export default function ExportScreen({ navigation }: Props) {
               if (!result.cancelled) {
                 const fresh = await getAllEpisodes();
                 setEpisodes(fresh);
+                await reloadSettings();
                 Alert.alert(
                   'Fatto',
                   `Il backup è stato ripristinato${
@@ -108,6 +116,7 @@ export default function ExportScreen({ navigation }: Props) {
       <Text style={styles.sectionLabel}>Documenti</Text>
       <ExportRow
         theme={theme}
+        scale={fontScale}
         icon="📄"
         title="Fascicolo PDF"
         description="Cronologia completa con base legale, pronta per avvocato o mediazione."
@@ -117,6 +126,7 @@ export default function ExportScreen({ navigation }: Props) {
       />
       <ExportRow
         theme={theme}
+        scale={fontScale}
         icon="📊"
         title="Dati in CSV"
         description="Tutti gli episodi in formato tabellare, per analisi o per il tuo avvocato."
@@ -126,6 +136,7 @@ export default function ExportScreen({ navigation }: Props) {
       />
       <ExportRow
         theme={theme}
+        scale={fontScale}
         icon="✉️"
         title="Bozza di diffida"
         description="Lettera modificabile basata sui tuoi episodi. Da personalizzare prima dell'invio — non è consulenza legale."
@@ -137,6 +148,7 @@ export default function ExportScreen({ navigation }: Props) {
       <Text style={styles.sectionLabel}>Backup del diario</Text>
       <ExportRow
         theme={theme}
+        scale={fontScale}
         icon="⬆️"
         title="Esporta backup"
         description="Database e file audio in un unico .zip, da salvare dove preferisci."
@@ -146,6 +158,7 @@ export default function ExportScreen({ navigation }: Props) {
       />
       <ExportRow
         theme={theme}
+        scale={fontScale}
         icon="⬇️"
         title="Ripristina backup"
         description="Sostituisce il diario attuale con quello di un file .zip esportato in precedenza."
@@ -158,6 +171,7 @@ export default function ExportScreen({ navigation }: Props) {
 
 function ExportRow({
   theme,
+  scale,
   icon,
   title,
   description,
@@ -166,6 +180,7 @@ function ExportRow({
   onPress,
 }: {
   theme: Theme;
+  scale: number;
   icon: string;
   title: string;
   description: string;
@@ -173,7 +188,7 @@ function ExportRow({
   loading?: boolean;
   onPress: () => void;
 }) {
-  const styles = makeStyles(theme);
+  const styles = makeStyles(theme, scale);
   return (
     <Pressable
       style={[styles.row, disabled && styles.rowDisabled]}
@@ -190,35 +205,38 @@ function ExportRow({
   );
 }
 
-function makeStyles(theme: Theme) {
-  return StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.bg },
-    content: { padding: 20, paddingTop: 64, paddingBottom: 60 },
-    title: { fontSize: 28, fontWeight: '700', color: theme.text },
-    subtitle: { fontSize: 13, color: theme.muted, marginTop: 4, marginBottom: 12 },
-    sectionLabel: {
-      color: theme.muted,
-      fontSize: 12,
-      fontWeight: '700',
-      textTransform: 'uppercase',
-      letterSpacing: 0.5,
-      marginTop: 24,
-      marginBottom: 10,
-    },
-    row: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: theme.surface,
-      borderRadius: 12,
-      padding: 16,
-      marginBottom: 10,
-      borderWidth: 1,
-      borderColor: theme.line,
-    },
-    rowDisabled: { opacity: 0.45 },
-    rowIcon: { fontSize: 22, marginRight: 14 },
-    rowBody: { flex: 1, paddingRight: 8 },
-    rowTitle: { color: theme.text, fontSize: 15, fontWeight: '600' },
-    rowDescription: { color: theme.muted, fontSize: 12, marginTop: 3, lineHeight: 17 },
-  });
+function makeStyles(theme: Theme, scale: number) {
+  return scaleFontSizes(
+    StyleSheet.create({
+      container: { flex: 1, backgroundColor: theme.bg },
+      content: { padding: 20, paddingTop: 64, paddingBottom: 60 },
+      title: { fontSize: 28, fontWeight: '700', color: theme.text },
+      subtitle: { fontSize: 13, color: theme.muted, marginTop: 4, marginBottom: 12 },
+      sectionLabel: {
+        color: theme.muted,
+        fontSize: 12,
+        fontWeight: '700',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginTop: 24,
+        marginBottom: 10,
+      },
+      row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: theme.surface,
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: theme.line,
+      },
+      rowDisabled: { opacity: 0.45 },
+      rowIcon: { fontSize: 22, marginRight: 14 },
+      rowBody: { flex: 1, paddingRight: 8 },
+      rowTitle: { color: theme.text, fontSize: 15, fontWeight: '600' },
+      rowDescription: { color: theme.muted, fontSize: 12, marginTop: 3, lineHeight: 17 },
+    }),
+    scale
+  );
 }

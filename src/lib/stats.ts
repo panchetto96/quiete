@@ -6,10 +6,16 @@ import { Episode, EpisodeType, EPISODE_TYPES } from '../types/episode';
 const DEFAULT_NIGHT_START_HOUR = 22;
 const DEFAULT_NIGHT_END_HOUR = 7;
 
+const DEFAULT_DAY_START_HOUR = 13;
+const DEFAULT_DAY_START_MINUTE = 0;
+const DEFAULT_DAY_END_HOUR = 15;
+const DEFAULT_DAY_END_MINUTE = 0;
+
 export interface HourBucket {
   hour: number;
   count: number;
   isNight: boolean;
+  isDayRest: boolean;
 }
 
 export interface WeekdayBucket {
@@ -31,6 +37,13 @@ export interface DiaryStats {
   nightPercentage: number;
   nightStartHour: number;
   nightEndHour: number;
+  dayRestEnabled: boolean;
+  dayRestCount: number;
+  dayRestPercentage: number;
+  dayStartHour: number;
+  dayStartMinute: number;
+  dayEndHour: number;
+  dayEndMinute: number;
   byHour: HourBucket[];
   byWeekday: WeekdayBucket[];
   byType: TypeBucket[];
@@ -44,8 +57,36 @@ export interface NightRange {
   nightEndHour: number;
 }
 
+export interface DayRestRange {
+  dayRestEnabled?: boolean;
+  dayStartHour: number;
+  dayStartMinute: number;
+  dayEndHour: number;
+  dayEndMinute: number;
+}
+
 function isNightHour(hour: number, range: NightRange): boolean {
-  return hour >= range.nightStartHour || hour < range.nightEndHour;
+  const { nightStartHour: start, nightEndHour: end } = range;
+  // Alcuni comuni fissano l'inizio del riposo a mezzanotte (start=0): in quel caso
+  // la fascia non "avvolge" la mezzanotte come per 22-7, è un intervallo diretto.
+  if (start < end) return hour >= start && hour < end;
+  return hour >= start || hour < end;
+}
+
+// A differenza del riposo notturno, la fascia diurna non avvolge mai la mezzanotte:
+// è sempre un intervallo diretto dello stesso giorno (es. 13:00-15:30).
+function isInDayRest(totalMinutes: number, range: DayRestRange): boolean {
+  const start = range.dayStartHour * 60 + range.dayStartMinute;
+  const end = range.dayEndHour * 60 + range.dayEndMinute;
+  return totalMinutes >= start && totalMinutes < end;
+}
+
+// Un'ora del grafico è "in fascia diurna" se il suo intervallo [hour:00, hour+1:00)
+// si sovrappone anche solo parzialmente alla fascia configurata.
+function isDayRestHour(hour: number, range: DayRestRange): boolean {
+  const start = range.dayStartHour * 60 + range.dayStartMinute;
+  const end = range.dayEndHour * 60 + range.dayEndMinute;
+  return hour * 60 < end && hour * 60 + 60 > start;
 }
 
 const WEEKDAY_LABELS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
@@ -57,12 +98,20 @@ function toMondayFirst(jsWeekday: number): number {
 
 export function computeStats(
   episodes: Episode[],
-  nightRange: NightRange = { nightStartHour: DEFAULT_NIGHT_START_HOUR, nightEndHour: DEFAULT_NIGHT_END_HOUR }
+  nightRange: NightRange = { nightStartHour: DEFAULT_NIGHT_START_HOUR, nightEndHour: DEFAULT_NIGHT_END_HOUR },
+  dayRestRange: DayRestRange = {
+    dayRestEnabled: false,
+    dayStartHour: DEFAULT_DAY_START_HOUR,
+    dayStartMinute: DEFAULT_DAY_START_MINUTE,
+    dayEndHour: DEFAULT_DAY_END_HOUR,
+    dayEndMinute: DEFAULT_DAY_END_MINUTE,
+  }
 ): DiaryStats {
   const byHourMap = new Map<number, number>();
   const byWeekdayMap = new Map<number, number>();
   const byTypeMap = new Map<EpisodeType, number>();
   let nightCount = 0;
+  let dayRestCount = 0;
 
   let first: string | null = null;
   let last: string | null = null;
@@ -77,6 +126,9 @@ export function computeStats(
     byTypeMap.set(ep.type, (byTypeMap.get(ep.type) ?? 0) + 1);
 
     if (isNightHour(hour, nightRange)) nightCount += 1;
+    if (dayRestRange.dayRestEnabled && isInDayRest(hour * 60 + date.getMinutes(), dayRestRange)) {
+      dayRestCount += 1;
+    }
 
     if (!first || ep.startedAt < first) first = ep.startedAt;
     if (!last || ep.startedAt > last) last = ep.startedAt;
@@ -86,6 +138,7 @@ export function computeStats(
     hour,
     count: byHourMap.get(hour) ?? 0,
     isNight: isNightHour(hour, nightRange),
+    isDayRest: Boolean(dayRestRange.dayRestEnabled) && isDayRestHour(hour, dayRestRange),
   }));
 
   const byWeekday: WeekdayBucket[] = WEEKDAY_LABELS.map((label, weekday) => ({
@@ -112,6 +165,13 @@ export function computeStats(
     nightPercentage: episodes.length > 0 ? Math.round((nightCount / episodes.length) * 100) : 0,
     nightStartHour: nightRange.nightStartHour,
     nightEndHour: nightRange.nightEndHour,
+    dayRestEnabled: Boolean(dayRestRange.dayRestEnabled),
+    dayRestCount,
+    dayRestPercentage: episodes.length > 0 ? Math.round((dayRestCount / episodes.length) * 100) : 0,
+    dayStartHour: dayRestRange.dayStartHour,
+    dayStartMinute: dayRestRange.dayStartMinute,
+    dayEndHour: dayRestRange.dayEndHour,
+    dayEndMinute: dayRestRange.dayEndMinute,
     byHour,
     byWeekday,
     byType,

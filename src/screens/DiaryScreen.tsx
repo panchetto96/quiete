@@ -5,17 +5,26 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme, Theme } from '../theme/colors';
 import { getAllEpisodes, insertEpisode } from '../db/database';
 import { Episode, EpisodeType, EPISODE_TYPES, episodeTypeInfo } from '../types/episode';
+import { useSettings } from '../context/SettingsContext';
+import { scaleFontSizes } from '../lib/fontScale';
 import type { RootStackParamList } from '../types/navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Diario'>;
+
+const BACKUP_REMINDER_DAYS = 14;
 
 function newId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function daysSince(iso: string): number {
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+}
+
 export default function DiaryScreen({ navigation }: Props) {
   const theme = useTheme();
-  const styles = makeStyles(theme);
+  const { settings, fontScale } = useSettings();
+  const styles = makeStyles(theme, fontScale);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [loading, setLoading] = useState(false);
   const [loggingQuick, setLoggingQuick] = useState(false);
@@ -40,45 +49,66 @@ export default function DiaryScreen({ navigation }: Props) {
     if (loggingQuick) return;
     setLoggingQuick(true);
     try {
-      const id = newId();
       await insertEpisode({
-        id,
+        id: newId(),
         type,
         startedAt: new Date().toISOString(),
         createdAt: new Date().toISOString(),
       });
       setPickerVisible(false);
-      navigation.navigate('DettaglioEpisodio', { id });
+      await load();
     } finally {
       setLoggingQuick(false);
     }
   }
 
+  const showBackupReminder =
+    episodes.length > 0 &&
+    settings?.backupReminderEnabled &&
+    (!settings.lastBackupAt || daysSince(settings.lastBackupAt) >= BACKUP_REMINDER_DAYS);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.headerText}>
-          <Text style={styles.title}>Diario</Text>
-          <Text style={styles.subtitle}>
-            {episodes.length === 0
-              ? 'Nessun episodio registrato'
-              : `${episodes.length} episodio${episodes.length === 1 ? '' : 'i'} registrat${
-                  episodes.length === 1 ? 'o' : 'i'
-                }`}
-          </Text>
-        </View>
+        <Text style={styles.title}>Diario</Text>
+        <Text style={styles.subtitle}>
+          {episodes.length === 0
+            ? 'Nessun episodio registrato'
+            : `${episodes.length} episodio${episodes.length === 1 ? '' : 'i'} registrat${
+                episodes.length === 1 ? 'o' : 'i'
+              }`}
+        </Text>
         <View style={styles.headerActions}>
-          <Pressable style={styles.iconBtn} onPress={() => navigation.navigate('Statistiche')}>
-            <Text style={styles.iconBtnText}>📊</Text>
+          <Pressable style={styles.actionBtn} onPress={() => navigation.navigate('Statistiche')}>
+            <Text style={styles.actionIcon}>📊</Text>
+            <Text style={styles.actionLabel}>Statistiche</Text>
           </Pressable>
-          <Pressable style={styles.iconBtn} onPress={() => navigation.navigate('Impostazioni')}>
-            <Text style={styles.iconBtnText}>⚙️</Text>
+          <Pressable style={styles.actionBtn} onPress={() => navigation.navigate('Impostazioni')}>
+            <Text style={styles.actionIcon}>⚙️</Text>
+            <Text style={styles.actionLabel}>Impostazioni</Text>
           </Pressable>
-          <Pressable style={styles.iconBtn} onPress={() => navigation.navigate('Esporta')}>
-            <Text style={styles.iconBtnText}>📤</Text>
+          <Pressable style={styles.actionBtn} onPress={() => navigation.navigate('Esporta')}>
+            <Text style={styles.actionIcon}>📤</Text>
+            <Text style={styles.actionLabel}>Esporta</Text>
           </Pressable>
         </View>
       </View>
+
+      {showBackupReminder && (
+        <Pressable style={styles.reminder} onPress={() => navigation.navigate('Esporta')}>
+          <Text style={styles.reminderIcon}>⬆️</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.reminderTitle}>
+              {settings?.lastBackupAt ? 'Backup non aggiornato' : 'Non hai ancora fatto un backup'}
+            </Text>
+            <Text style={styles.reminderText}>
+              {settings?.lastBackupAt
+                ? `Ultimo salvataggio ${daysSince(settings.lastBackupAt)} giorni fa. Tocca per farne uno nuovo.`
+                : 'Se perdi il telefono, perdi anche il diario. Tocca per salvare una copia.'}
+            </Text>
+          </View>
+        </Pressable>
+      )}
 
       {episodes.length === 0 ? (
         <View style={styles.empty}>
@@ -165,116 +195,128 @@ export default function DiaryScreen({ navigation }: Props) {
   );
 }
 
-function makeStyles(theme: Theme) {
-  return StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.bg },
-    header: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      paddingHorizontal: 20,
-      paddingTop: 64,
-      paddingBottom: 16,
-    },
-    headerText: { flex: 1, paddingRight: 12 },
-    title: { fontSize: 28, fontWeight: '700', color: theme.text },
-    subtitle: { fontSize: 13, color: theme.muted, marginTop: 4 },
-    headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    iconBtn: {
-      width: 38,
-      height: 38,
-      borderRadius: 10,
-      borderWidth: 1,
-      borderColor: theme.line,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    iconBtnText: { fontSize: 16, color: theme.text },
-    empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
-    emptyIcon: { fontSize: 40, marginBottom: 16 },
-    emptyText: { color: theme.muted, textAlign: 'center', fontSize: 15, lineHeight: 22, maxWidth: 280 },
-    list: { paddingHorizontal: 20, paddingBottom: 150 },
-    row: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: theme.surface,
-      borderRadius: 12,
-      padding: 16,
-      marginBottom: 10,
-      borderWidth: 1,
-      borderColor: theme.line,
-    },
-    rowIcon: { fontSize: 22, marginRight: 14 },
-    rowBody: { flex: 1 },
-    rowTitle: { color: theme.text, fontSize: 15, fontWeight: '600' },
-    rowMeta: { color: theme.muted, fontSize: 12, marginTop: 3 },
-    quickFab: {
-      position: 'absolute',
-      right: 20,
-      bottom: 100,
-      paddingHorizontal: 18,
-      height: 46,
-      borderRadius: 23,
-      backgroundColor: theme.surface,
-      borderWidth: 1,
-      borderColor: theme.accent,
-      justifyContent: 'center',
-      alignItems: 'center',
-      shadowColor: '#000',
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
-      shadowOffset: { width: 0, height: 3 },
-      elevation: 4,
-    },
-    quickFabText: { color: theme.text, fontSize: 14, fontWeight: '700' },
-    fab: {
-      position: 'absolute',
-      right: 20,
-      bottom: 32,
-      width: 58,
-      height: 58,
-      borderRadius: 29,
-      backgroundColor: theme.accent,
-      justifyContent: 'center',
-      alignItems: 'center',
-      shadowColor: '#000',
-      shadowOpacity: 0.3,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 4 },
-      elevation: 6,
-    },
-    fabText: { color: theme.accentInk, fontSize: 30, fontWeight: '400', marginTop: -2 },
-    modalBackdrop: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      justifyContent: 'flex-end',
-    },
-    sheet: {
-      backgroundColor: theme.surface,
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      padding: 24,
-      paddingBottom: 36,
-      borderTopWidth: 1,
-      borderColor: theme.line,
-    },
-    sheetTitle: { color: theme.text, fontSize: 18, fontWeight: '700', marginBottom: 6 },
-    sheetHint: { color: theme.muted, fontSize: 12, marginBottom: 18, lineHeight: 17 },
-    sheetGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    sheetChip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      backgroundColor: theme.surface2,
-      borderWidth: 1,
-      borderColor: theme.line,
-      borderRadius: 999,
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-    },
-    sheetChipIcon: { fontSize: 16 },
-    sheetChipLabel: { color: theme.text, fontSize: 13, fontWeight: '600' },
-    sheetCancel: { alignItems: 'center', marginTop: 20, padding: 8 },
-    sheetCancelText: { color: theme.muted, fontSize: 14 },
-  });
+function makeStyles(theme: Theme, scale: number) {
+  return scaleFontSizes(
+    StyleSheet.create({
+      container: { flex: 1, backgroundColor: theme.bg },
+      header: {
+        paddingHorizontal: 20,
+        paddingTop: 64,
+        paddingBottom: 20,
+      },
+      title: { fontSize: 28, fontWeight: '700', color: theme.text },
+      subtitle: { fontSize: 13, color: theme.muted, marginTop: 4 },
+      headerActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
+      actionBtn: {
+        flex: 1,
+        minHeight: 64,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: theme.line,
+        backgroundColor: theme.surface,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 10,
+        gap: 4,
+      },
+      actionIcon: { fontSize: 20 },
+      actionLabel: { fontSize: 11.5, fontWeight: '600', color: theme.text, textAlign: 'center' },
+      reminder: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: theme.surface2,
+        borderWidth: 1,
+        borderColor: theme.accent,
+        borderRadius: 12,
+        padding: 14,
+        marginHorizontal: 20,
+        marginBottom: 16,
+        gap: 12,
+      },
+      reminderIcon: { fontSize: 20 },
+      reminderTitle: { color: theme.text, fontSize: 13, fontWeight: '700', marginBottom: 3 },
+      reminderText: { color: theme.muted, fontSize: 12, lineHeight: 17 },
+      empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
+      emptyIcon: { fontSize: 40, marginBottom: 16 },
+      emptyText: { color: theme.muted, textAlign: 'center', fontSize: 15, lineHeight: 22, maxWidth: 280 },
+      list: { paddingHorizontal: 20, paddingBottom: 150 },
+      row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: theme.surface,
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: theme.line,
+      },
+      rowIcon: { fontSize: 22, marginRight: 14 },
+      rowBody: { flex: 1 },
+      rowTitle: { color: theme.text, fontSize: 15, fontWeight: '600' },
+      rowMeta: { color: theme.muted, fontSize: 12, marginTop: 3 },
+      quickFab: {
+        position: 'absolute',
+        right: 20,
+        bottom: 100,
+        paddingHorizontal: 18,
+        height: 46,
+        borderRadius: 23,
+        backgroundColor: theme.surface,
+        borderWidth: 1,
+        borderColor: theme.accent,
+        justifyContent: 'center',
+        alignItems: 'center',
+        boxShadow: [{ offsetX: 0, offsetY: 3, blurRadius: 8, color: 'rgba(0,0,0,0.2)' }],
+        elevation: 4,
+      },
+      quickFabText: { color: theme.text, fontSize: 14, fontWeight: '700' },
+      fab: {
+        position: 'absolute',
+        right: 20,
+        bottom: 32,
+        width: 58,
+        height: 58,
+        borderRadius: 29,
+        backgroundColor: theme.accent,
+        justifyContent: 'center',
+        alignItems: 'center',
+        boxShadow: [{ offsetX: 0, offsetY: 4, blurRadius: 10, color: 'rgba(0,0,0,0.3)' }],
+        elevation: 6,
+      },
+      fabText: { color: theme.accentInk, fontSize: 30, fontWeight: '400', marginTop: -2 },
+      modalBackdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+      },
+      sheet: {
+        backgroundColor: theme.surface,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        padding: 24,
+        paddingBottom: 36,
+        borderTopWidth: 1,
+        borderColor: theme.line,
+      },
+      sheetTitle: { color: theme.text, fontSize: 18, fontWeight: '700', marginBottom: 6 },
+      sheetHint: { color: theme.muted, fontSize: 12, marginBottom: 18, lineHeight: 17 },
+      sheetGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+      sheetChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: theme.surface2,
+        borderWidth: 1,
+        borderColor: theme.line,
+        borderRadius: 999,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+      },
+      sheetChipIcon: { fontSize: 16 },
+      sheetChipLabel: { color: theme.text, fontSize: 13, fontWeight: '600' },
+      sheetCancel: { alignItems: 'center', marginTop: 20, padding: 8 },
+      sheetCancelText: { color: theme.muted, fontSize: 14 },
+    }),
+    scale
+  );
 }
