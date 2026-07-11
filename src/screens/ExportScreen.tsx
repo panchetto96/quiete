@@ -109,7 +109,7 @@ export default function ExportScreen({ navigation }: Props) {
       <Text style={styles.title}>Esporta</Text>
       <Text style={styles.subtitle}>
         {hasEpisodes
-          ? `${episodes.length} episodio${episodes.length === 1 ? '' : 'i'} nel diario`
+          ? `${episodes.length} ${episodes.length === 1 ? 'episodio' : 'episodi'} nel diario`
           : 'Registra almeno un episodio per usare queste funzioni'}
       </Text>
 

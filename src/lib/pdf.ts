@@ -71,7 +71,7 @@ export function buildFascicoloHtml(episodes: Episode[], settings?: AppSettings):
     </head>
     <body>
       <h1>Fascicolo &mdash; Diario dei rumori molesti</h1>
-      <p class="sub">Generato da Quiete il ${new Date().toLocaleString('it-IT')} &middot; ${sorted.length} episodio${sorted.length === 1 ? '' : 'i'} registrat${sorted.length === 1 ? 'o' : 'i'}</p>
+      <p class="sub">Generato da Quiete il ${new Date().toLocaleString('it-IT')} &middot; ${sorted.length} ${sorted.length === 1 ? 'episodio registrato' : 'episodi registrati'}</p>
 
       <div class="summary">
         <strong>Riepilogo</strong><br/>

@@ -74,9 +74,7 @@ export default function DiaryScreen({ navigation }: Props) {
         <Text style={styles.subtitle}>
           {episodes.length === 0
             ? 'Nessun episodio registrato'
-            : `${episodes.length} episodio${episodes.length === 1 ? '' : 'i'} registrat${
-                episodes.length === 1 ? 'o' : 'i'
-              }`}
+            : `${episodes.length} ${episodes.length === 1 ? 'episodio registrato' : 'episodi registrati'}`}
         </Text>
         <View style={styles.headerActions}>
           <Pressable style={styles.actionBtn} onPress={() => navigation.navigate('Statistiche')}>

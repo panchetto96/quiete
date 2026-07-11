@@ -63,6 +63,22 @@ describe('buildFascicoloHtml — fascia diurna', () => {
   });
 });
 
+describe('buildFascicoloHtml — plurale nel conteggio episodi', () => {
+  it('usa il singolare corretto con un solo episodio', () => {
+    const html = buildFascicoloHtml(oneEpisode, undefined);
+    expect(html).toContain('1 episodio registrato');
+  });
+
+  it('usa il plurale corretto con più episodi (non "episodioi")', () => {
+    const html = buildFascicoloHtml(
+      [ep('a', '2026-03-10T10:00:00.000Z'), ep('b', '2026-03-11T10:00:00.000Z')],
+      undefined
+    );
+    expect(html).toContain('2 episodi registrati');
+    expect(html).not.toContain('episodioi');
+  });
+});
+
 describe('buildFascicoloHtml — sicurezza', () => {
   it('esegue l\'escape dell\'HTML nelle note per evitare injection nel documento', () => {
     const malicious = [ep('a', '2026-03-10T10:00:00.000Z', '<script>alert(1)</script>')];
