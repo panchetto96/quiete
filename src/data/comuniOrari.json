@@ -1,0 +1,23 @@
+[
+  {
+    "comune": "Roma",
+    "nightStartHour": 22,
+    "nightEndHour": 8,
+    "note": "Il regolamento fissa il limite di normale tollerabilità dalle 22 alle 8; dalle 23 alle 8 i suoni non devono essere percepibili nelle abitazioni vicine.",
+    "fonte": "Regolamento di Polizia Urbana di Roma Capitale, Assemblea Capitolina n. 43/2019"
+  },
+  {
+    "comune": "Torino",
+    "nightStartHour": 22,
+    "nightEndHour": 8,
+    "note": "Art. 46 (Abitazioni private): vietato produrre rumore molesto ai vicini, in particolare nella fascia 22-8.",
+    "fonte": "Regolamento di Polizia Urbana, Città di Torino, art. 46"
+  },
+  {
+    "comune": "Cagliari",
+    "nightStartHour": 23,
+    "nightEndHour": 7,
+    "note": "Periodo notturno 23-7 nelle zone residenziali; il regolamento prevede anche un riposo pomeridiano dalle 13 alle 15:30.",
+    "fonte": "Regolamento Acustico Comunale, Comune di Cagliari (delibera C.C. n. 37/2016)"
+  }
+]

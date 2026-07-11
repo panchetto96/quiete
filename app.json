@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "Quiete",
+    "slug": "quiete",
+    "scheme": "quiete",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.quiete.diario"
+    },
+    "android": {
+      "package": "app.quiete.diario",
+      "adaptiveIcon": {
+        "backgroundColor": "#0E1220",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-sqlite",
+      [
+        "expo-audio",
+        {
+          "microphonePermissionText": "Quiete usa il microfono solo per registrare il rumore molesto che documenti nel diario. La registrazione resta sul tuo telefono."
+        }
+      ],
+      "expo-sharing",
+      "@react-native-community/datetimepicker",
+      "expo-asset"
+    ]
+  }
+}
