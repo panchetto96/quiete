@@ -16,20 +16,9 @@ import { useSettings } from '../context/SettingsContext';
 import { scaleFontSizes } from '../lib/fontScale';
 import type { RootStackParamList } from '../types/navigation';
 import comuniOrari from '../data/comuniOrari.json';
+import { ComunePreset, findMatchedPreset } from '../lib/comunePreset';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Impostazioni'>;
-
-interface ComunePreset {
-  comune: string;
-  nightStartHour: number;
-  nightEndHour: number;
-  dayStartHour?: number;
-  dayStartMinute?: number;
-  dayEndHour?: number;
-  dayEndMinute?: number;
-  fonte?: string;
-  note?: string;
-}
 
 function newId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -294,26 +283,16 @@ export default function SettingsScreen({ navigation }: Props) {
   }
 
   const allPresets: ComunePreset[] = [...comuniOrari, ...customComuni];
-
-  // Un preset è "attivo" solo se il comune E tutti gli orari attualmente impostati
-  // coincidono esattamente con quelli verificati: se l'utente ha modificato anche
-  // un solo orario, la fonte di quel preset non è più valida e non va più citata.
-  function dayFieldsMatchPreset(preset: ComunePreset): boolean {
-    if (preset.dayStartHour === undefined || preset.dayEndHour === undefined) {
-      return !dayRestEnabled;
-    }
-    return (
-      dayRestEnabled &&
-      dayStartHour === preset.dayStartHour &&
-      dayStartMinute === (preset.dayStartMinute ?? 0) &&
-      dayEndHour === preset.dayEndHour &&
-      dayEndMinute === (preset.dayEndMinute ?? 0)
-    );
-  }
-
-  const matchedPreset = allPresets.find(
-    (p) => p.comune === comune && p.nightStartHour === nightStartHour && p.nightEndHour === nightEndHour && dayFieldsMatchPreset(p)
-  );
+  const matchedPreset = findMatchedPreset(allPresets, {
+    comune,
+    nightStartHour,
+    nightEndHour,
+    dayRestEnabled,
+    dayStartHour,
+    dayStartMinute,
+    dayEndHour,
+    dayEndMinute,
+  });
 
   return (
     <>
