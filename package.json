@@ -34,7 +34,9 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "test": "jest"
+    "test": "jest",
+    "prebuild": "expo prebuild",
+    "postprebuild": "node scripts/apply-release-signing.js"
   },
   "private": true,
   "jest": {
